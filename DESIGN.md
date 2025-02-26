@@ -19,7 +19,7 @@ graph TD
     G --> H[Amazon SES]
     H --> I[送信メール]
 
-    J[設定ファイル\nS3バケット] -.-> F
+    J[設定ファイル\nリポジトリ内] -.-> F
     K[OpenAI APIキー\nSecrets Manager] -.-> F
 ```
 
@@ -32,7 +32,10 @@ graph TD
 
 2. **S3バケット**
    - メールバケット: 受信メールの一時保存
-   - 設定バケット: システムプロンプトなどの設定ファイルを保存
+
+3. **設定ファイル**
+   - リポジトリ内の config/default.json に保存
+   - ビルド時にバンドルされ、Lambda関数内で利用可能
 
 3. **Lambda関数**
    - parse-mail: メールの解析とStep Functions開始
@@ -65,7 +68,7 @@ graph TD
    ```mermaid
    sequenceDiagram
        participant SF as Step Functions
-       participant Config as 設定S3
+       participant Config as リポジトリ内設定
        participant OpenAI as OpenAI API
        participant Lambda as OpenAI Lambda
        

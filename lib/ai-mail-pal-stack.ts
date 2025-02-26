@@ -15,11 +15,6 @@ export class AiMailPalStack extends cdk.Stack {
     super(scope, id);
 
     // S3バケットの作成
-    const configBucket = new s3.Bucket(this, "ConfigBucket", {
-      bucketName: props.configBucketName,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
-
     const mailBucket = new s3.Bucket(this, "MailBucket", {
       bucketName: props.mailBucketName,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -39,7 +34,6 @@ export class AiMailPalStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
       environment: {
-        CONFIG_BUCKET: configBucket.bucketName,
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
@@ -53,7 +47,6 @@ export class AiMailPalStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.minutes(1),
       environment: {
-        CONFIG_BUCKET: configBucket.bucketName,
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
@@ -67,7 +60,6 @@ export class AiMailPalStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
       environment: {
-        CONFIG_BUCKET: configBucket.bucketName,
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
@@ -122,8 +114,6 @@ export class AiMailPalStack extends cdk.Stack {
     );
 
     // 必要なIAMポリシーの付与
-    configBucket.grantRead(parseMailFunction);
-    configBucket.grantRead(callOpenAiFunction);
     mailBucket.grantRead(parseMailFunction);
     openAiSecret.grantRead(callOpenAiFunction);
 

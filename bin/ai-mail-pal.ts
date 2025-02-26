@@ -6,8 +6,6 @@ const app = new cdk.App();
 
 // 環境変数から設定を読み込む
 const environment = process.env.ENVIRONMENT || "dev";
-const configBucketName =
-  process.env.CONFIG_BUCKET_NAME || `ai-mail-pal-config-${environment}`;
 const mailBucketName =
   process.env.MAIL_BUCKET_NAME || `ai-mail-pal-mail-${environment}`;
 const openAiSecretName =
@@ -16,7 +14,6 @@ const openAiSecretName =
 // スタックの作成
 new AiMailPalStack(app, `AiMailPalStack-${environment}`, {
   environment,
-  configBucketName,
   mailBucketName,
   openAiSecretName,
   /* If you don't specify 'env', this stack will be environment-agnostic.

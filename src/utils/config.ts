@@ -1,31 +1,16 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { AppConfig } from "../types/config";
+import defaultConfig from "../../config/default.json";
 
 /**
- * S3から設定ファイルを読み込む
+ * リポジトリ内の設定ファイルを読み込む
+ *
+ * 設定ファイルはリポジトリ内の config/default.json に配置されており、
+ * ビルド時にバンドルされる
  */
 export async function loadConfig(): Promise<AppConfig> {
-  const s3Client = new S3Client({});
-  const configBucket = process.env.CONFIG_BUCKET;
-
-  if (!configBucket) {
-    throw new Error("CONFIG_BUCKET environment variable is not set");
-  }
-
   try {
-    const response = await s3Client.send(
-      new GetObjectCommand({
-        Bucket: configBucket,
-        Key: "default.json",
-      })
-    );
-
-    const configString = await response.Body?.transformToString();
-    if (!configString) {
-      throw new Error("Config file is empty");
-    }
-
-    return JSON.parse(configString) as AppConfig;
+    // 型キャストを行い、設定ファイルをAppConfig型として返す
+    return defaultConfig as AppConfig;
   } catch (error) {
     console.error("Failed to load config:", error);
     throw error;
