@@ -53,6 +53,7 @@ export class AiMailPalStack extends cdk.Stack {
     );
 
     // SES受信ルールの作成
+    // FIXME: これアカウントに1つなのでこのスタックで作るのは不適切
     new ses.ReceiptRuleSet(this, "MailRuleSet", {
       rules: [
         {
@@ -85,21 +86,25 @@ export class AiMailPalStack extends cdk.Stack {
       functionName: `ai-mail-pal-${props.environment}-parse-mail`,
     });
 
-    const callOpenAiFunction = new NodejsFunction(this, "CallOpenAiFunction", {
-      entry: path.resolve(
-        path.dirname(fileURLToPath(import.meta.url)),
-        "../src/functions/call-openai.ts"
-      ),
-      runtime: lambda.Runtime.NODEJS_20_X,
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.minutes(1),
-      handler: "handler",
-      environment: {
-        OPENAI_SECRET_NAME: props.openAiSecretName,
-        ENVIRONMENT: props.environment,
-      },
-      functionName: `ai-mail-pal-${props.environment}-call-openai`,
-    });
+    const composeReplyFunction = new NodejsFunction(
+      this,
+      "ComposeReplyFunction",
+      {
+        entry: path.resolve(
+          path.dirname(fileURLToPath(import.meta.url)),
+          "../src/functions/compose-reply.ts"
+        ),
+        runtime: lambda.Runtime.NODEJS_20_X,
+        architecture: lambda.Architecture.ARM_64,
+        timeout: cdk.Duration.minutes(1),
+        handler: "handler",
+        environment: {
+          OPENAI_SECRET_NAME: props.openAiSecretName,
+          ENVIRONMENT: props.environment,
+        },
+        functionName: `ai-mail-pal-${props.environment}-compose-reply`,
+      }
+    );
 
     const sendMailFunction = new NodejsFunction(this, "SendMailFunction", {
       entry: path.resolve(
@@ -118,8 +123,8 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // Step Functions定義
-    const callOpenAiTask = new sfnTasks.LambdaInvoke(this, "Call OpenAI API", {
-      lambdaFunction: callOpenAiFunction,
+    const composeReplyTask = new sfnTasks.LambdaInvoke(this, "Compose Reply", {
+      lambdaFunction: composeReplyFunction,
     });
 
     const waitTask = new sfn.Wait(this, "Random Delay", {
@@ -131,7 +136,9 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // ステートマシンの定義
-    const stateMachineChain = callOpenAiTask.next(waitTask).next(sendMailTask);
+    const stateMachineChain = composeReplyTask
+      .next(waitTask)
+      .next(sendMailTask);
 
     const stateMachine = new sfn.StateMachine(
       this,
@@ -160,7 +167,7 @@ export class AiMailPalStack extends cdk.Stack {
 
     // 必要なIAMポリシーの付与
     mailBucket.grantRead(parseMailFunction);
-    openAiSecret.grantRead(callOpenAiFunction);
+    openAiSecret.grantRead(composeReplyFunction);
 
     // SES権限の付与
     sendMailFunction.addToRolePolicy(
