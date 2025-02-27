@@ -5,14 +5,16 @@ import { AiMailPalStack } from "../lib/ai-mail-pal-stack";
 const app = new cdk.App();
 
 // 環境変数から設定を読み込む
-const environment = process.env.ENVIRONMENT || "dev";
-const mailBucketName =
-  process.env.MAIL_BUCKET_NAME || `ai-mail-pal-mail-${environment}`;
-const openAiSecretName =
-  process.env.OPENAI_SECRET_NAME || "ai-mail-pal/openai-api-key";
+const environment = (app.node.tryGetContext("environment") ?? "dev") as string;
+const mailBucketName = `ai-mail-pal-mail-${environment}`;
+const openAiSecretName = `ai-mail-pal/openai-api-key-${environment}`;
+const mailRecipientDomain = app.node.getContext(
+  "mailRecipientDomain"
+) as string;
 
 // スタックの作成
 new AiMailPalStack(app, `AiMailPalStack-${environment}`, {
+  mailRecipientDomain,
   environment,
   mailBucketName,
   openAiSecretName,

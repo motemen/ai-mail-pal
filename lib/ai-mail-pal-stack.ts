@@ -15,6 +15,11 @@ import { fileURLToPath } from "node:url";
 
 export interface AiMailPalStackProps extends cdk.StackProps {
   /**
+   * メールの受信ドメイン
+   */
+  mailRecipientDomain: string;
+
+  /**
    * メール受信用のS3バケット名
    */
   mailBucketName: string;
@@ -48,10 +53,10 @@ export class AiMailPalStack extends cdk.Stack {
     );
 
     // SES受信ルールの作成
-    const mailRuleSet = new ses.ReceiptRuleSet(this, "MailRuleSet", {
+    new ses.ReceiptRuleSet(this, "MailRuleSet", {
       rules: [
         {
-          recipients: [],
+          recipients: [props.mailRecipientDomain],
           actions: [
             new sesActions.S3({
               bucket: mailBucket,
@@ -113,10 +118,6 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // Step Functions定義
-    const parseMailTask = new sfnTasks.LambdaInvoke(this, "Parse Mail", {
-      lambdaFunction: parseMailFunction,
-    });
-
     const callOpenAiTask = new sfnTasks.LambdaInvoke(this, "Call OpenAI API", {
       lambdaFunction: callOpenAiFunction,
     });
@@ -130,10 +131,7 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // ステートマシンの定義
-    const stateMachineChain = parseMailTask
-      .next(callOpenAiTask)
-      .next(waitTask)
-      .next(sendMailTask);
+    const stateMachineChain = callOpenAiTask.next(waitTask).next(sendMailTask);
 
     const stateMachine = new sfn.StateMachine(
       this,
