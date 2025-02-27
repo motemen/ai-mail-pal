@@ -3,9 +3,11 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
-import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import * as sfnTasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as s3notify from "aws-cdk-lib/aws-s3-notifications";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as ses from "aws-cdk-lib/aws-ses";
+import * as sesActions from "aws-cdk-lib/aws-ses-actions";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import path from "node:path";
@@ -44,6 +46,21 @@ export class AiMailPalStack extends cdk.Stack {
       "OpenAiSecret",
       props.openAiSecretName
     );
+
+    // SES受信ルールの作成
+    const mailRuleSet = new ses.ReceiptRuleSet(this, "MailRuleSet", {
+      rules: [
+        {
+          recipients: [],
+          actions: [
+            new sesActions.S3({
+              bucket: mailBucket,
+              objectKeyPrefix: "mail/",
+            }),
+          ],
+        },
+      ],
+    });
 
     // Lambda関数の共通設定
     // Lambda関数の作成
@@ -96,11 +113,11 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // Step Functions定義
-    const parseMailTask = new tasks.LambdaInvoke(this, "Parse Mail", {
+    const parseMailTask = new sfnTasks.LambdaInvoke(this, "Parse Mail", {
       lambdaFunction: parseMailFunction,
     });
 
-    const callOpenAiTask = new tasks.LambdaInvoke(this, "Call OpenAI API", {
+    const callOpenAiTask = new sfnTasks.LambdaInvoke(this, "Call OpenAI API", {
       lambdaFunction: callOpenAiFunction,
     });
 
@@ -108,7 +125,7 @@ export class AiMailPalStack extends cdk.Stack {
       time: sfn.WaitTime.secondsPath("$.waitSeconds"),
     });
 
-    const sendMailTask = new tasks.LambdaInvoke(this, "Send Mail", {
+    const sendMailTask = new sfnTasks.LambdaInvoke(this, "Send Mail", {
       lambdaFunction: sendMailFunction,
     });
 
