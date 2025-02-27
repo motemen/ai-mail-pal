@@ -4,11 +4,29 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
-import * as ses from "aws-cdk-lib/aws-ses";
 import * as s3notify from "aws-cdk-lib/aws-s3-notifications";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
-import { AiMailPalStackProps } from "./types";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+export interface AiMailPalStackProps extends cdk.StackProps {
+  /**
+   * メール受信用のS3バケット名
+   */
+  mailBucketName: string;
+
+  /**
+   * OpenAI APIキー（SecretsManagerから取得）
+   */
+  openAiSecretName: string;
+
+  /**
+   * 環境名（dev/prod等）
+   */
+  environment: string;
+}
 
 export class AiMailPalStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AiMailPalStackProps) {
@@ -29,43 +47,52 @@ export class AiMailPalStack extends cdk.Stack {
 
     // Lambda関数の共通設定
     // Lambda関数の作成
-    const parseMailFunction = new lambda.Function(this, "ParseMailFunction", {
+    const parseMailFunction = new NodejsFunction(this, "ParseMailFunction", {
+      entry: path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../src/functions/parse-mail.ts"
+      ),
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
+      handler: "handler",
       environment: {
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
-      functionName: `${props.environment}-parse-mail`,
-      handler: "functions/parse-mail.handler",
-      code: lambda.Code.fromAsset("dist"),
+      functionName: `ai-mail-pal-${props.environment}-parse-mail`,
     });
 
-    const callOpenAiFunction = new lambda.Function(this, "CallOpenAiFunction", {
+    const callOpenAiFunction = new NodejsFunction(this, "CallOpenAiFunction", {
+      entry: path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../src/functions/call-openai.ts"
+      ),
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.minutes(1),
+      handler: "handler",
       environment: {
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
-      functionName: `${props.environment}-call-openai`,
-      handler: "functions/call-openai.handler",
-      code: lambda.Code.fromAsset("dist"),
+      functionName: `ai-mail-pal-${props.environment}-call-openai`,
     });
 
-    const sendMailFunction = new lambda.Function(this, "SendMailFunction", {
+    const sendMailFunction = new NodejsFunction(this, "SendMailFunction", {
+      entry: path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../src/functions/send-mail.ts"
+      ),
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
+      handler: "handler",
       environment: {
         OPENAI_SECRET_NAME: props.openAiSecretName,
         ENVIRONMENT: props.environment,
       },
-      functionName: `${props.environment}-send-mail`,
-      handler: "functions/send-mail.handler",
-      code: lambda.Code.fromAsset("dist"),
+      functionName: `ai-mail-pal-${props.environment}-send-mail`,
     });
 
     // Step Functions定義
@@ -86,14 +113,17 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     // ステートマシンの定義
+    const stateMachineChain = parseMailTask
+      .next(callOpenAiTask)
+      .next(waitTask)
+      .next(sendMailTask);
+
     const stateMachine = new sfn.StateMachine(
       this,
       "MailProcessingStateMachine",
       {
-        definition: parseMailTask
-          .next(callOpenAiTask)
-          .next(waitTask)
-          .next(sendMailTask),
+        definitionBody:
+          sfn.ChainDefinitionBody.fromChainable(stateMachineChain),
         stateMachineName: `${props.environment}-mail-processing`,
         timeout: cdk.Duration.hours(24),
       }

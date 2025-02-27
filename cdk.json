@@ -1,0 +1,3 @@
+{
+  "app": "pnpx tsx ./bin/ai-mail-pal.ts"
+}
