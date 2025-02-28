@@ -23,8 +23,7 @@
     "aws-cdk": "^2.1001.0",
     "aws-cdk-lib": "^2.181.0",
     "constructs": "^10.4.2",
-    "esbuild": "^0.25.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3"
   },
   "dependencies": {
@@ -33,9 +32,7 @@
     "@aws-sdk/client-ses": "^3.750.0",
     "@aws-sdk/client-sfn": "^3.750.0",
     "@types/mailparser": "^3.4.5",
-    "@types/nodemailer": "^6.4.17",
     "mailparser": "^3.7.2",
-    "nodemailer": "^6.10.0",
     "openai": "^4.85.4"
   },
   "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
