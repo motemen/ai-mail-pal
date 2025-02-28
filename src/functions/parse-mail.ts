@@ -6,7 +6,12 @@ import {
 import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
 import { simpleParser } from "mailparser";
 import { ParsedMail, MailProcessState } from "../types/mail";
-import { loadConfig, generateRandomDelay, formatError } from "../utils/config";
+import {
+  loadConfig,
+  generateRandomDelay,
+  formatError,
+  getLocalPart,
+} from "../utils/config";
 
 /**
  * S3からメールを読み込む
@@ -123,8 +128,17 @@ export const handler = async (
     const mailContent = await loadMailFromS3(bucket, key);
     const parsedMail = await parseMailContent(mailContent);
 
+    // メールアドレスのローカルパートを取得
+    const localPart = getLocalPart(parsedMail.to[0]);
+
+    // ローカルパート固有の設定またはデフォルト設定を取得
+    const promptConfig = config.prompts[localPart] || config.default;
+
+    // ローカルパート固有の遅延設定またはグローバル設定を使用
+    const delayConfig = promptConfig.delay || config.delay;
+
     // ランダムな遅延時間の生成
-    const waitSeconds = generateRandomDelay(config.delay.min, config.delay.max);
+    const waitSeconds = generateRandomDelay(delayConfig.min, delayConfig.max);
 
     // Step Functionsの入力データを作成
     const input: MailProcessState = {
