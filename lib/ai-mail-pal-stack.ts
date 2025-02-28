@@ -70,22 +70,6 @@ export class AiMailPalStack extends cdk.Stack {
 
     // Lambda関数の共通設定
     // Lambda関数の作成
-    const parseMailFunction = new NodejsFunction(this, "ParseMailFunction", {
-      entry: path.resolve(
-        path.dirname(fileURLToPath(import.meta.url)),
-        "../src/functions/parse-mail.ts"
-      ),
-      runtime: lambda.Runtime.NODEJS_20_X,
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(30),
-      handler: "handler",
-      environment: {
-        OPENAI_SECRET_NAME: props.openAiSecretName,
-        ENVIRONMENT: props.environment,
-      },
-      functionName: `ai-mail-pal-${props.environment}-parse-mail`,
-    });
-
     const composeReplyFunction = new NodejsFunction(
       this,
       "ComposeReplyFunction",
@@ -128,11 +112,12 @@ export class AiMailPalStack extends cdk.Stack {
     });
 
     const waitTask = new sfn.Wait(this, "Random Delay", {
-      time: sfn.WaitTime.secondsPath("$.waitSeconds"),
+      time: sfn.WaitTime.secondsPath("$.Payload.waitSeconds"),
     });
 
     const sendMailTask = new sfnTasks.LambdaInvoke(this, "Send Mail", {
       lambdaFunction: sendMailFunction,
+      inputPath: "$.Payload",
     });
 
     // ステートマシンの定義
@@ -150,6 +135,23 @@ export class AiMailPalStack extends cdk.Stack {
         timeout: cdk.Duration.hours(24),
       }
     );
+
+    const parseMailFunction = new NodejsFunction(this, "ParseMailFunction", {
+      entry: path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../src/functions/parse-mail.ts"
+      ),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(30),
+      handler: "handler",
+      environment: {
+        OPENAI_SECRET_NAME: props.openAiSecretName,
+        ENVIRONMENT: props.environment,
+        STATE_MACHINE_ARN: stateMachine.stateMachineArn,
+      },
+      functionName: `ai-mail-pal-${props.environment}-parse-mail`,
+    });
 
     // S3トリガーの設定
     mailBucket.addEventNotification(

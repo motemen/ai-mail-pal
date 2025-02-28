@@ -28,8 +28,7 @@ async function getOpenAiApiKey(): Promise<string> {
       throw new Error("Secret value is empty");
     }
 
-    const secret = JSON.parse(response.SecretString);
-    return secret.apiKey;
+    return response.SecretString;
   } catch (error) {
     console.error("Failed to get OpenAI API key:", error);
     throw error;
@@ -67,7 +66,7 @@ async function generateReply(
   const openai = new OpenAI({ apiKey });
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo-preview",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -93,10 +92,9 @@ async function generateReply(
 /**
  * Lambda関数のハンドラー
  */
-export const handler = async (event: {
-  parsedMail: MailProcessState["parsedMail"];
-  waitSeconds: number;
-}): Promise<MailProcessState> => {
+export const handler = async (
+  event: MailProcessState
+): Promise<MailProcessState> => {
   try {
     // 設定の読み込み
     const config = await loadConfig();
