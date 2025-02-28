@@ -14,7 +14,7 @@ graph TD
     B --> C[S3バケット]
     C --> D[Lambda: メール解析]
     D --> E[Step Functions]
-    E --> F[Lambda: OpenAI API呼び出し]
+    E --> F[Lambda: 返信生成]
     F --> G[Lambda: メール送信]
     G --> H[Amazon SES]
     H --> I[送信メール]
@@ -39,7 +39,7 @@ graph TD
 
 3. **Lambda関数**
    - parse-mail: メールの解析とStep Functions開始
-   - call-openai: OpenAI APIを使用した返信生成
+   - compose-reply: OpenAI APIを使用した返信生成
    - send-mail: メール送信処理
 
 4. **Step Functions**
@@ -70,10 +70,12 @@ graph TD
        participant SF as Step Functions
        participant Config as リポジトリ内設定
        participant OpenAI as OpenAI API
-       participant Lambda as OpenAI Lambda
+       participant Lambda as 返信生成Lambda
+       participant Secrets as Secrets Manager
        
        SF->>Lambda: 関数呼び出し
        Lambda->>Config: 設定読み込み
+       Lambda->>Secrets: OpenAI APIキー取得
        Lambda->>OpenAI: API呼び出し
        OpenAI-->>Lambda: 返信生成
        Lambda-->>SF: 結果返却
@@ -99,26 +101,41 @@ graph TD
 ```json
 {
   "prompts": {
-    "support": {
-      "systemPrompt": "サポートチーム用のプロンプト...",
-      "signature": "AIサポートチーム"
-    },
-    "sales": {
-      "systemPrompt": "営業チーム用のプロンプト...",
-      "signature": "AI営業部"
+    "mentor": {
+      "systemPrompt": "あなたは経験豊かで洞察鋭いメンターです。以下の指針に従って返信してください：\n- フランクな態度で率直な意見を述べる\n- あなたの経験を元に、相手にアドバイスを提供する\n- あいさつなどの余計な内容は含めず、内容を完結にまとめる",
+      "signature": "あなたのAIメンター",
+      "delay": {
+        "min": 60,
+        "max": 180
+      },
+      "openai": {
+        "model": "gpt-4o",
+        "temperature": 1.1,
+        "maxTokens": 1000
+      }
     }
   },
   "default": {
-    "systemPrompt": "デフォルトのプロンプト...",
-    "signature": "AI自動応答システム"
+    "systemPrompt": "あなたは礼儀正しいビジネスパーソンです。以下の指針に従って返信してください：\n- 常に丁寧な言葉遣いを心がける\n- 日本のビジネスメールマナーを遵守する\n- お客様の質問に対して、適切な情報を提供する",
+    "signature": "あなたのAI",
+    "openai": {
+      "model": "gpt-4o-mini",
+      "temperature": 0.8,
+      "maxTokens": 2000
+    }
+  },
+  "delay": {
+    "min": 300,
+    "max": 900
   }
 }
 ```
 
 ### 遅延設定
 
-- 最小遅延時間: 5分（300秒）
-- 最大遅延時間: 15分（900秒）
+- デフォルトの最小遅延時間: 5分（300秒）
+- デフォルトの最大遅延時間: 15分（900秒）
+- ローカルパートごとに個別の遅延設定が可能
 - ランダムな遅延を生成して人間らしい応答時間を演出
 
 ## エラーハンドリング
@@ -131,6 +148,7 @@ graph TD
 2. **OpenAI APIエラー**
    - API制限
    - トークン制限
+   - モデル非対応
    - → 自動リトライ後、継続的なエラーは管理者に通知
 
 3. **メール送信エラー**
@@ -182,8 +200,9 @@ graph TD
 
 1. **機能拡張**
    - 添付ファイルの処理
-   - HTMLメールのサポート
+   - HTMLメールのサポート強化
    - 多言語対応
+   - 複数のOpenAIモデル対応
 
 2. **インテグレーション**
    - チケットシステムとの連携
