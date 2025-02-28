@@ -8,12 +8,16 @@ const app = new cdk.App();
 const environment = (app.node.tryGetContext("environment") ?? "dev") as string;
 const mailBucketName = `ai-mail-pal-mail-${environment}`;
 const openAiSecretName = `ai-mail-pal/openai-api-key-${environment}`;
+const sesReceiptRuleSetName = app.node.getContext(
+  "sesReceiptRuleSetName"
+) as string;
 const mailRecipientDomain = app.node.getContext(
   "mailRecipientDomain"
 ) as string;
 
 // スタックの作成
 new AiMailPalStack(app, `AiMailPalStack-${environment}`, {
+  sesReceiptRuleSetName,
   mailRecipientDomain,
   environment,
   mailBucketName,

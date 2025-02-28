@@ -14,6 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export interface AiMailPalStackProps extends cdk.StackProps {
+  sesReceiptRuleSetName: string;
   /**
    * メールの受信ドメイン
    */
@@ -53,20 +54,34 @@ export class AiMailPalStack extends cdk.Stack {
     );
 
     // SES受信ルールの作成
-    // FIXME: これアカウントに1つなのでこのスタックで作るのは不適切
-    new ses.ReceiptRuleSet(this, "MailRuleSet", {
-      rules: [
-        {
-          recipients: [props.mailRecipientDomain],
-          actions: [
-            new sesActions.S3({
-              bucket: mailBucket,
-              objectKeyPrefix: "mail/",
-            }),
-          ],
-        },
+    const mailRuleSet = ses.ReceiptRuleSet.fromReceiptRuleSetName(
+      this,
+      "ImportedMailRuleSet",
+      props.sesReceiptRuleSetName
+    );
+    mailRuleSet.addRule("MailRule", {
+      recipients: [props.mailRecipientDomain],
+      actions: [
+        new sesActions.S3({
+          bucket: mailBucket,
+          objectKeyPrefix: "mail/",
+        }),
       ],
     });
+
+    // new ses.ReceiptRuleSet(this, "MailRuleSet", {
+    //   rules: [
+    //     {
+    //       recipients: [props.mailRecipientDomain],
+    //       actions: [
+    //         new sesActions.S3({
+    //           bucket: mailBucket,
+    //           objectKeyPrefix: "mail/",
+    //         }),
+    //       ],
+    //     },
+    //   ],
+    // });
 
     // Lambda関数の共通設定
     // Lambda関数の作成
