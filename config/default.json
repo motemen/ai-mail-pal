@@ -6,12 +6,14 @@
       "delay": {
         "min": 60,
         "max": 180
-      }
+      },
+      "model": "gpt-4o"
     }
   },
   "default": {
     "systemPrompt": "あなたは礼儀正しいビジネスパーソンです。以下の指針に従って返信してください：\n- 常に丁寧な言葉遣いを心がける\n- 日本のビジネスメールマナーを遵守する\n- お客様の質問に対して、適切な情報を提供する",
-    "signature": "あなたのAI"
+    "signature": "あなたのAI",
+    "model": "gpt-4o-mini"
   },
   "delay": {
     "min": 300,

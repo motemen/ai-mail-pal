@@ -55,12 +55,13 @@ ${text}
 async function generateReply(
   apiKey: string,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  model: string = "gpt-4o-mini" // デフォルトモデルを指定
 ): Promise<string> {
   const openai = new OpenAI({ apiKey });
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     messages: [
       {
         role: "system",
@@ -111,7 +112,8 @@ export const handler = async (
     const openAiResponse = await generateReply(
       apiKey,
       promptConfig.systemPrompt,
-      userPrompt
+      userPrompt,
+      promptConfig.model // 設定からモデルを取得
     );
 
     return {

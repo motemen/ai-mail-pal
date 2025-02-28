@@ -18,6 +18,8 @@ export interface LocalPartConfig {
   signature: string;
   /** 返信遅延時間の設定（オプション） */
   delay?: DelayConfig;
+  /** OpenAIのモデル（オプション） */
+  model?: string;
 }
 
 /**
