@@ -7,7 +7,7 @@ const app = new cdk.App();
 // 環境変数から設定を読み込む
 const environment = (app.node.tryGetContext("environment") ?? "dev") as string;
 const mailBucketName = `ai-mail-pal-mail-${environment}`;
-const openAiSecretName = `ai-mail-pal/openai-api-key-${environment}`;
+const openAiSecretName = `ai-mail-pal-${environment}/openai-api-key`;
 const sesReceiptRuleSetName = app.node.getContext(
   "sesReceiptRuleSetName"
 ) as string;

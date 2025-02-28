@@ -21,7 +21,7 @@ export async function loadConfig(): Promise<AppConfig> {
  * メールアドレスからローカルパートを抽出する
  */
 export function getLocalPart(email: string): string {
-  return email.split("@")[0];
+  return email.split("@")[0].replace(/^.*</g, "");
 }
 
 /**

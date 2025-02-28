@@ -146,8 +146,7 @@ export class AiMailPalStack extends cdk.Stack {
       {
         definitionBody:
           sfn.ChainDefinitionBody.fromChainable(stateMachineChain),
-        stateMachineName: `${props.environment}-mail-processing`,
-        timeout: cdk.Duration.hours(24),
+        stateMachineName: `ai-mail-pal-${props.environment}-mail-processing`,
       }
     );
 
