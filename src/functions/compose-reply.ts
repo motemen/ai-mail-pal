@@ -4,6 +4,7 @@ import {
 } from "@aws-sdk/client-secrets-manager";
 import OpenAI from "openai";
 import { MailProcessState } from "../types/mail";
+import { OpenAIConfig } from "../types/config";
 import { loadConfig, getLocalPart, formatError } from "../utils/config";
 
 /**
@@ -50,18 +51,33 @@ ${text}
 }
 
 /**
+ * デフォルトのOpenAI設定
+ */
+const DEFAULT_OPENAI_CONFIG: OpenAIConfig = {
+  model: "gpt-4o-mini",
+  temperature: 0.7,
+  maxTokens: 1000,
+};
+
+/**
  * OpenAI APIを使用して返信を生成
  */
 async function generateReply(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
-  model: string = "gpt-4o-mini" // デフォルトモデルを指定
+  openaiConfig: Partial<OpenAIConfig> = {}
 ): Promise<string> {
   const openai = new OpenAI({ apiKey });
 
+  // デフォルト設定とマージ
+  const config = {
+    ...DEFAULT_OPENAI_CONFIG,
+    ...openaiConfig,
+  };
+
   const response = await openai.chat.completions.create({
-    model,
+    model: config.model,
     messages: [
       {
         role: "system",
@@ -72,8 +88,8 @@ async function generateReply(
         content: userPrompt,
       },
     ],
-    temperature: 0.7,
-    max_tokens: 1000,
+    temperature: config.temperature,
+    max_tokens: config.maxTokens,
   });
 
   const reply = response.choices[0]?.message?.content;
@@ -113,7 +129,7 @@ export const handler = async (
       apiKey,
       promptConfig.systemPrompt,
       userPrompt,
-      promptConfig.model // 設定からモデルを取得
+      promptConfig.openai // 設定からOpenAI設定を取得
     );
 
     return {

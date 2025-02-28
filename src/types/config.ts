@@ -9,6 +9,18 @@ export interface DelayConfig {
 }
 
 /**
+ * OpenAI APIの設定
+ */
+export interface OpenAIConfig {
+  /** 使用するモデル */
+  model: string;
+  /** 生成時の温度パラメータ（0.0〜1.0） */
+  temperature: number;
+  /** 最大トークン数 */
+  maxTokens: number;
+}
+
+/**
  * メールアドレスのローカルパートごとの設定
  */
 export interface LocalPartConfig {
@@ -18,8 +30,8 @@ export interface LocalPartConfig {
   signature: string;
   /** 返信遅延時間の設定（オプション） */
   delay?: DelayConfig;
-  /** OpenAIのモデル（オプション） */
-  model?: string;
+  /** OpenAI APIの設定（オプション） */
+  openai?: Partial<OpenAIConfig>;
 }
 
 /**

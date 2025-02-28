@@ -7,13 +7,21 @@
         "min": 60,
         "max": 180
       },
-      "model": "gpt-4o"
+      "openai": {
+        "model": "gpt-4o",
+        "temperature": 1.1,
+        "maxTokens": 1000
+      }
     }
   },
   "default": {
     "systemPrompt": "あなたは礼儀正しいビジネスパーソンです。以下の指針に従って返信してください：\n- 常に丁寧な言葉遣いを心がける\n- 日本のビジネスメールマナーを遵守する\n- お客様の質問に対して、適切な情報を提供する",
     "signature": "あなたのAI",
-    "model": "gpt-4o-mini"
+    "openai": {
+      "model": "gpt-4o-mini",
+      "temperature": 0.8,
+      "maxTokens": 2000
+    }
   },
   "delay": {
     "min": 300,
