@@ -19,7 +19,8 @@ function generateReplySubject(originalSubject: string): string {
 function generateMailBody(
   response: string,
   signature: string,
-  originalMail: string
+  originalFrom: string,
+  originalBody: string
 ): string {
   const date = new Date().toLocaleString("ja-JP", {
     timeZone: "Asia/Tokyo",
@@ -27,12 +28,12 @@ function generateMailBody(
 
   return `${response}
 
+-- 
 ${signature}
 
---
-${date}
+${date} ${originalFrom}:
 
-> ${originalMail.replace(/\n/g, "\n> ")}`;
+> ${originalBody.replace(/\n/g, "\n> ")}`;
 }
 
 /**
@@ -96,6 +97,7 @@ export const handler = async (event: {
     const mailBody = generateMailBody(
       event.openAiResponse,
       promptConfig.signature,
+      event.parsedMail.from,
       event.parsedMail.text
     );
 

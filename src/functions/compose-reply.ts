@@ -46,12 +46,6 @@ function generatePrompt(text: string, subject: string, from: string): string {
 
 ${text}
 
-返信は以下の形式で行ってください：
-1. 丁寧な言葉遣いを心がける
-2. 相手の質問や要望に具体的に答える
-3. 必要に応じて追加の質問をする
-4. 適切な結びの言葉を使用する
-
 返信の本文のみを記載してください。件名は自動的に設定されます。`;
 }
 
